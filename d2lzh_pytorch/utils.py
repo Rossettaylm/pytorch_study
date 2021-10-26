@@ -34,38 +34,42 @@ VOC_COLORMAP = [[0, 0, 0], [128, 0, 0], [0, 128, 0], [128, 128, 0],
                 [0, 64, 128]]
 
 
-
 # ###################### 3.2 ############################
 def set_figsize(figsize=(3.5, 2.5)):
     use_svg_display()
     # 设置图的尺寸
     plt.rcParams['figure.figsize'] = figsize
 
+
 def use_svg_display():
     """Use svg format to display plot in jupyter"""
     display.set_matplotlib_formats('svg')
+
 
 def data_iter(batch_size, features, labels):
     num_examples = len(features)
     indices = list(range(num_examples))
     random.shuffle(indices)  # 样本的读取顺序是随机的
     for i in range(0, num_examples, batch_size):
-        j = torch.LongTensor(indices[i: min(i + batch_size, num_examples)]) # 最后一次可能不足一个batch
-        yield  features.index_select(0, j), labels.index_select(0, j)
+        j = torch.LongTensor(
+            indices[i: min(i + batch_size, num_examples)])  # 最后一次可能不足一个batch
+        yield features.index_select(0, j), labels.index_select(0, j)
+
 
 def linreg(X, w, b):
     return torch.mm(X, w) + b
+
 
 def squared_loss(y_hat, y):
     # 注意这里返回的是向量, 另外, pytorch里的MSELoss并没有除以 2
     return ((y_hat - y.view(y_hat.size())) ** 2) / 2
 
+
 def sgd(params, lr, batch_size):
     # 为了和原书保持一致，这里除以了batch_size，但是应该是不用除的，因为一般用PyTorch计算loss时就默认已经
     # 沿batch维求了平均了。
     for param in params:
-        param.data -= lr * param.grad / batch_size # 注意这里更改param时用的param.data
-
+        param.data -= lr * param.grad / batch_size  # 注意这里更改param时用的param.data
 
 
 # ######################3##### 3.5 #############################
@@ -73,6 +77,7 @@ def get_fashion_mnist_labels(labels):
     text_labels = ['t-shirt', 'trouser', 'pullover', 'dress', 'coat',
                    'sandal', 'shirt', 'sneaker', 'bag', 'ankle boot']
     return [text_labels[int(i)] for i in labels]
+
 
 def show_fashion_mnist(images, labels):
     use_svg_display()
@@ -99,8 +104,6 @@ def show_fashion_mnist(images, labels):
 #     test_iter = torch.utils.data.DataLoader(mnist_test, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
 #     return train_iter, test_iter
-
-
 
 
 # ########################### 3.6  ###############################
@@ -134,7 +137,6 @@ def train_ch3(net, train_iter, test_iter, loss, num_epochs, batch_size,
             else:
                 optimizer.step()  # “softmax回归的简洁实现”一节将用到
 
-
             train_l_sum += l.item()
             train_acc_sum += (y_hat.argmax(dim=1) == y).sum().item()
             n += y.shape[0]
@@ -143,13 +145,12 @@ def train_ch3(net, train_iter, test_iter, loss, num_epochs, batch_size,
               % (epoch + 1, train_l_sum / n, train_acc_sum / n, test_acc))
 
 
-
-
 # ########################### 3.7 #####################################3
 class FlattenLayer(torch.nn.Module):
     def __init__(self):
         super(FlattenLayer, self).__init__()
-    def forward(self, x): # x shape: (batch, *, *, ...)
+
+    def forward(self, x):  # x shape: (batch, *, *, ...)
         return x.view(x.shape[0], -1)
 
 
@@ -164,8 +165,6 @@ def semilogy(x_vals, y_vals, x_label, y_label, x2_vals=None, y2_vals=None,
         plt.semilogy(x2_vals, y2_vals, linestyle=':')
         plt.legend(legend)
     # plt.show()
-
-
 
 
 # ############################# 3.13 ##############################
@@ -187,10 +186,6 @@ def semilogy(x_vals, y_vals, x_label, y_label, x2_vals=None, y2_vals=None,
 #     return acc_sum / n
 
 
-
-
-
-
 # ########################### 5.1 #########################
 def corr2d(X, K):
     h, w = K.shape
@@ -199,7 +194,6 @@ def corr2d(X, K):
         for j in range(Y.shape[1]):
             Y[i, j] = (X[i: i + h, j: j + w] * K).sum()
     return Y
-
 
 
 # ############################ 5.5 #########################
@@ -211,17 +205,20 @@ def evaluate_accuracy(data_iter, net, device=None):
     with torch.no_grad():
         for X, y in data_iter:
             if isinstance(net, torch.nn.Module):
-                net.eval() # 评估模式, 这会关闭dropout
-                acc_sum += (net(X.to(device)).argmax(dim=1) == y.to(device)).float().sum().cpu().item()
-                net.train() # 改回训练模式
-            else: # 自定义的模型, 3.13节之后不会用到, 不考虑GPU
-                if('is_training' in net.__code__.co_varnames): # 如果有is_training这个参数
+                net.eval()  # 评估模式, 这会关闭dropout
+                acc_sum += (net(X.to(device)).argmax(dim=1) ==
+                            y.to(device)).float().sum().cpu().item()
+                net.train()  # 改回训练模式
+            else:  # 自定义的模型, 3.13节之后不会用到, 不考虑GPU
+                if('is_training' in net.__code__.co_varnames):  # 如果有is_training这个参数
                     # 将is_training设置成False
-                    acc_sum += (net(X, is_training=False).argmax(dim=1) == y).float().sum().item()
+                    acc_sum += (net(X, is_training=False).argmax(dim=1)
+                                == y).float().sum().item()
                 else:
                     acc_sum += (net(X).argmax(dim=1) == y).float().sum().item()
             n += y.shape[0]
     return acc_sum / n
+
 
 def train_ch5(net, train_iter, test_iter, batch_size, optimizer, device, num_epochs):
     net = net.to(device)
@@ -246,7 +243,6 @@ def train_ch5(net, train_iter, test_iter, batch_size, optimizer, device, num_epo
               % (epoch + 1, train_l_sum / batch_count, train_acc_sum / n, test_acc, time.time() - start))
 
 
-
 # ########################## 5.6 #########################3
 def load_data_fashion_mnist(batch_size, resize=None, root='~/Datasets/FashionMNIST'):
     """Download the fashion mnist dataset and then load into memory."""
@@ -256,17 +252,20 @@ def load_data_fashion_mnist(batch_size, resize=None, root='~/Datasets/FashionMNI
     trans.append(torchvision.transforms.ToTensor())
 
     transform = torchvision.transforms.Compose(trans)
-    mnist_train = torchvision.datasets.FashionMNIST(root=root, train=True, download=True, transform=transform)
-    mnist_test = torchvision.datasets.FashionMNIST(root=root, train=False, download=True, transform=transform)
+    mnist_train = torchvision.datasets.FashionMNIST(
+        root=root, train=True, download=True, transform=transform)
+    mnist_test = torchvision.datasets.FashionMNIST(
+        root=root, train=False, download=True, transform=transform)
     if sys.platform.startswith('win'):
         num_workers = 0  # 0表示不用额外的进程来加速读取数据
     else:
         num_workers = 4
-    train_iter = torch.utils.data.DataLoader(mnist_train, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-    test_iter = torch.utils.data.DataLoader(mnist_test, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    train_iter = torch.utils.data.DataLoader(
+        mnist_train, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    test_iter = torch.utils.data.DataLoader(
+        mnist_test, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
     return train_iter, test_iter
-
 
 
 ############################# 5.8 ##############################
@@ -274,19 +273,22 @@ class GlobalAvgPool2d(nn.Module):
     # 全局平均池化层可通过将池化窗口形状设置成输入的高和宽实现
     def __init__(self):
         super(GlobalAvgPool2d, self).__init__()
+
     def forward(self, x):
         return F.avg_pool2d(x, kernel_size=x.size()[2:])
-
 
 
 # ########################### 5.11 ################################
 class Residual(nn.Module):
     def __init__(self, in_channels, out_channels, use_1x1conv=False, stride=1):
         super(Residual, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, stride=stride)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(in_channels, out_channels,
+                               kernel_size=3, padding=1, stride=stride)
+        self.conv2 = nn.Conv2d(out_channels, out_channels,
+                               kernel_size=3, padding=1)
         if use_1x1conv:
-            self.conv3 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride)
+            self.conv3 = nn.Conv2d(
+                in_channels, out_channels, kernel_size=1, stride=stride)
         else:
             self.conv3 = None
         self.bn1 = nn.BatchNorm2d(out_channels)
@@ -299,16 +301,19 @@ class Residual(nn.Module):
             X = self.conv3(X)
         return F.relu(Y + X)
 
+
 def resnet_block(in_channels, out_channels, num_residuals, first_block=False):
     if first_block:
-        assert in_channels == out_channels # 第一个模块的通道数同输入通道数一致
+        assert in_channels == out_channels  # 第一个模块的通道数同输入通道数一致
     blk = []
     for i in range(num_residuals):
         if i == 0 and not first_block:
-            blk.append(Residual(in_channels, out_channels, use_1x1conv=True, stride=2))
+            blk.append(Residual(in_channels, out_channels,
+                       use_1x1conv=True, stride=2))
         else:
             blk.append(Residual(out_channels, out_channels))
     return nn.Sequential(*blk)
+
 
 def resnet18(output=10, in_channels=3):
     net = nn.Sequential(
@@ -320,10 +325,10 @@ def resnet18(output=10, in_channels=3):
     net.add_module("resnet_block2", resnet_block(64, 128, 2))
     net.add_module("resnet_block3", resnet_block(128, 256, 2))
     net.add_module("resnet_block4", resnet_block(256, 512, 2))
-    net.add_module("global_avg_pool", GlobalAvgPool2d()) # GlobalAvgPool2d的输出: (Batch, 512, 1, 1)
+    # GlobalAvgPool2d的输出: (Batch, 512, 1, 1)
+    net.add_module("global_avg_pool", GlobalAvgPool2d())
     net.add_module("fc", nn.Sequential(FlattenLayer(), nn.Linear(512, output)))
     return net
-
 
 
 # ############################## 6.3 ##################################3
@@ -339,6 +344,7 @@ def load_data_jay_lyrics():
     vocab_size = len(char_to_idx)
     corpus_indices = [char_to_idx[char] for char in corpus_chars]
     return corpus_indices, char_to_idx, idx_to_char, vocab_size
+
 
 def data_iter_random(corpus_indices, batch_size, num_steps, device=None):
     # 减1是因为输出的索引x是相应输入的索引y加1
@@ -361,22 +367,22 @@ def data_iter_random(corpus_indices, batch_size, num_steps, device=None):
         Y = [_data(j * num_steps + 1) for j in batch_indices]
         yield torch.tensor(X, dtype=torch.float32, device=device), torch.tensor(Y, dtype=torch.float32, device=device)
 
+
 def data_iter_consecutive(corpus_indices, batch_size, num_steps, device=None):
     if device is None:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    corpus_indices = torch.tensor(corpus_indices, dtype=torch.float32, device=device)
+    corpus_indices = torch.tensor(
+        corpus_indices, dtype=torch.float32, device=device)
     data_len = len(corpus_indices)
     batch_len = data_len // batch_size
-    indices = corpus_indices[0: batch_size*batch_len].view(batch_size, batch_len)
+    indices = corpus_indices[0: batch_size *
+                             batch_len].view(batch_size, batch_len)
     epoch_size = (batch_len - 1) // num_steps
     for i in range(epoch_size):
         i = i * num_steps
         X = indices[:, i: i + num_steps]
         Y = indices[:, i + 1: i + num_steps + 1]
         yield X, Y
-
-
-
 
 
 # ###################################### 6.4 ######################################
@@ -387,9 +393,11 @@ def one_hot(x, n_class, dtype=torch.float32):
     res.scatter_(1, x.view(-1, 1), 1)
     return res
 
+
 def to_onehot(X, n_class):
     # X shape: (batch, seq_len), output: seq_len elements of (batch, n_class)
     return [one_hot(X[:, i], n_class) for i in range(X.shape[1])]
+
 
 def predict_rnn(prefix, num_chars, rnn, params, init_rnn_state,
                 num_hiddens, vocab_size, device, idx_to_char, char_to_idx):
@@ -407,6 +415,7 @@ def predict_rnn(prefix, num_chars, rnn, params, init_rnn_state,
             output.append(int(Y[0].argmax(dim=1).item()))
     return ''.join([idx_to_char[i] for i in output])
 
+
 def grad_clipping(params, theta, device):
     norm = torch.tensor([0.0], device=device)
     for param in params:
@@ -415,6 +424,7 @@ def grad_clipping(params, theta, device):
     if norm > theta:
         for param in params:
             param.grad.data *= (theta / norm)
+
 
 def train_and_predict_rnn(rnn, get_params, init_rnn_state, num_hiddens,
                           vocab_size, device, corpus_indices, idx_to_char,
@@ -437,8 +447,8 @@ def train_and_predict_rnn(rnn, get_params, init_rnn_state, num_hiddens,
             if is_random_iter:  # 如使用随机采样，在每个小批量更新前初始化隐藏状态
                 state = init_rnn_state(batch_size, num_hiddens, device)
             else:
-            # 否则需要使用detach函数从计算图分离隐藏状态, 这是为了
-            # 使模型参数的梯度计算只依赖一次迭代读取的小批量序列(防止梯度计算开销太大)
+                # 否则需要使用detach函数从计算图分离隐藏状态, 这是为了
+                # 使模型参数的梯度计算只依赖一次迭代读取的小批量序列(防止梯度计算开销太大)
                 for s in state:
                     s.detach_()
 
@@ -468,9 +478,7 @@ def train_and_predict_rnn(rnn, get_params, init_rnn_state, num_hiddens,
                 epoch + 1, math.exp(l_sum / n), time.time() - start))
             for prefix in prefixes:
                 print(' -', predict_rnn(prefix, pred_len, rnn, params, init_rnn_state,
-                    num_hiddens, vocab_size, device, idx_to_char, char_to_idx))
-
-
+                                        num_hiddens, vocab_size, device, idx_to_char, char_to_idx))
 
 
 # ################################### 6.5 ################################################
@@ -478,28 +486,30 @@ class RNNModel(nn.Module):
     def __init__(self, rnn_layer, vocab_size):
         super(RNNModel, self).__init__()
         self.rnn = rnn_layer
-        self.hidden_size = rnn_layer.hidden_size * (2 if rnn_layer.bidirectional else 1)
+        self.hidden_size = rnn_layer.hidden_size * \
+            (2 if rnn_layer.bidirectional else 1)
         self.vocab_size = vocab_size
         self.dense = nn.Linear(self.hidden_size, vocab_size)
         self.state = None
 
-    def forward(self, inputs, state): # inputs: (batch, seq_len)
+    def forward(self, inputs, state):  # inputs: (batch, seq_len)
         # 获取one-hot向量表示
-        X = to_onehot(inputs, self.vocab_size) # X是个list
+        X = to_onehot(inputs, self.vocab_size)  # X是个list
         Y, self.state = self.rnn(torch.stack(X), state)
         # 全连接层会首先将Y的形状变成(num_steps * batch_size, num_hiddens)，它的输出
         # 形状为(num_steps * batch_size, vocab_size)
         output = self.dense(Y.view(-1, Y.shape[-1]))
         return output, self.state
 
+
 def predict_rnn_pytorch(prefix, num_chars, model, vocab_size, device, idx_to_char,
-                      char_to_idx):
+                        char_to_idx):
     state = None
-    output = [char_to_idx[prefix[0]]] # output会记录prefix加上输出
+    output = [char_to_idx[prefix[0]]]  # output会记录prefix加上输出
     for t in range(num_chars + len(prefix) - 1):
         X = torch.tensor([output[-1]], device=device).view(1, 1)
         if state is not None:
-            if isinstance(state, tuple): # LSTM, state:(h, c)
+            if isinstance(state, tuple):  # LSTM, state:(h, c)
                 state = (state[0].to(device), state[1].to(device))
             else:
                 state = state.to(device)
@@ -511,27 +521,30 @@ def predict_rnn_pytorch(prefix, num_chars, model, vocab_size, device, idx_to_cha
             output.append(int(Y.argmax(dim=1).item()))
     return ''.join([idx_to_char[i] for i in output])
 
+
 def train_and_predict_rnn_pytorch(model, num_hiddens, vocab_size, device,
-                                corpus_indices, idx_to_char, char_to_idx,
-                                num_epochs, num_steps, lr, clipping_theta,
-                                batch_size, pred_period, pred_len, prefixes):
+                                  corpus_indices, idx_to_char, char_to_idx,
+                                  num_epochs, num_steps, lr, clipping_theta,
+                                  batch_size, pred_period, pred_len, prefixes):
     loss = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     model.to(device)
     state = None
     for epoch in range(num_epochs):
         l_sum, n, start = 0.0, 0, time.time()
-        data_iter = data_iter_consecutive(corpus_indices, batch_size, num_steps, device) # 相邻采样
+        data_iter = data_iter_consecutive(
+            corpus_indices, batch_size, num_steps, device)  # 相邻采样
         for X, Y in data_iter:
             if state is not None:
                 # 使用detach函数从计算图分离隐藏状态, 这是为了
                 # 使模型参数的梯度计算只依赖一次迭代读取的小批量序列(防止梯度计算开销太大)
-                if isinstance (state, tuple): # LSTM, state:(h, c)
+                if isinstance(state, tuple):  # LSTM, state:(h, c)
                     state = (state[0].detach(), state[1].detach())
                 else:
                     state = state.detach()
 
-            (output, state) = model(X, state) # output: 形状为(num_steps * batch_size, vocab_size)
+            # output: 形状为(num_steps * batch_size, vocab_size)
+            (output, state) = model(X, state)
 
             # Y的形状是(batch_size, num_steps)，转置后再变成长度为
             # batch * num_steps 的向量，这样跟输出的行一一对应
@@ -559,8 +572,6 @@ def train_and_predict_rnn_pytorch(model, num_hiddens, vocab_size, device,
                     char_to_idx))
 
 
-
-
 # ######################################## 7.2 ###############################################
 def train_2d(trainer):
     x1, x2, s1, s2 = -5, -2, 0, 0  # s1和s2是自变量状态，本章后续几节会使用
@@ -571,6 +582,7 @@ def train_2d(trainer):
     print('epoch %d, x1 %f, x2 %f' % (i + 1, x1, x2))
     return results
 
+
 def show_trace_2d(f, results):
     plt.plot(*zip(*results), '-o', color='#ff7f0e')
     x1, x2 = np.meshgrid(np.arange(-5.5, 1.0, 0.1), np.arange(-3.0, 1.0, 0.1))
@@ -579,14 +591,14 @@ def show_trace_2d(f, results):
     plt.ylabel('x2')
 
 
-
-
 # ######################################## 7.3 ###############################################
 def get_data_ch7():
     data = np.genfromtxt('../../data/airfoil_self_noise.dat', delimiter='\t')
     data = (data - data.mean(axis=0)) / data.std(axis=0)
     return torch.tensor(data[:1500, :-1], dtype=torch.float32), \
-        torch.tensor(data[:1500, -1], dtype=torch.float32) # 前1500个样本(每个样本5个特征)
+        torch.tensor(data[:1500, -1],
+                     dtype=torch.float32)  # 前1500个样本(每个样本5个特征)
+
 
 def train_ch7(optimizer_fn, states, hyperparams, features, labels,
               batch_size=10, num_epochs=2):
@@ -595,7 +607,8 @@ def train_ch7(optimizer_fn, states, hyperparams, features, labels,
 
     w = torch.nn.Parameter(torch.tensor(np.random.normal(0, 0.01, size=(features.shape[1], 1)), dtype=torch.float32),
                            requires_grad=True)
-    b = torch.nn.Parameter(torch.zeros(1, dtype=torch.float32), requires_grad=True)
+    b = torch.nn.Parameter(torch.zeros(
+        1, dtype=torch.float32), requires_grad=True)
 
     def eval_loss():
         return loss(net(features, w, b), labels).mean().item()
@@ -627,8 +640,10 @@ def train_ch7(optimizer_fn, states, hyperparams, features, labels,
 
 # 本函数与原书不同的是这里第一个参数优化器函数而不是优化器的名字
 # 例如: optimizer_fn=torch.optim.SGD, optimizer_hyperparams={"lr": 0.05}
+
+
 def train_pytorch_ch7(optimizer_fn, optimizer_hyperparams, features, labels,
-                    batch_size=10, num_epochs=2):
+                      batch_size=10, num_epochs=2):
     # 初始化模型
     net = nn.Sequential(
         nn.Linear(features.shape[-1], 1)
@@ -662,8 +677,6 @@ def train_pytorch_ch7(optimizer_fn, optimizer_hyperparams, features, labels,
     plt.ylabel('loss')
 
 
-
-
 ############################## 8.3 ##################################
 class Benchmark():
     def __init__(self, prefix=None):
@@ -676,9 +689,6 @@ class Benchmark():
         print('%stime: %.4f sec' % (self.prefix, time.time() - self.start))
 
 
-
-
-
 # ########################### 9.1 ########################################
 def show_images(imgs, num_rows, num_cols, scale=2):
     figsize = (num_cols * scale, num_rows * scale)
@@ -689,6 +699,7 @@ def show_images(imgs, num_rows, num_cols, scale=2):
             axes[i][j].axes.get_xaxis().set_visible(False)
             axes[i][j].axes.get_yaxis().set_visible(False)
     return axes
+
 
 def train(train_iter, test_iter, net, loss, optimizer, device, num_epochs):
     net = net.to(device)
@@ -713,8 +724,6 @@ def train(train_iter, test_iter, net, loss, optimizer, device, num_epochs):
               % (epoch + 1, train_l_sum / batch_count, train_acc_sum / n, test_acc, time.time() - start))
 
 
-
-
 ############################## 9.3 #####################
 def bbox_to_rect(bbox, color):
     # 将边界框(左上x, 左上y, 右下x, 右下y)格式转换成matplotlib格式：
@@ -722,8 +731,6 @@ def bbox_to_rect(bbox, color):
     return plt.Rectangle(
         xy=(bbox[0], bbox[1]), width=bbox[2]-bbox[0], height=bbox[3]-bbox[1],
         fill=False, edgecolor=color, linewidth=2)
-
-
 
 
 ############################ 9.4 ###########################
@@ -738,7 +745,7 @@ def MultiBoxPrior(feature_map, sizes=[0.75, 0.5, 0.25], ratios=[1, 2, 0.5]):
     Returns:
         anchors of shape (1, num_anchors, 4). 由于batch里每个都一样, 所以第一维为1
     """
-    pairs = [] # pair of (size, sqrt(ration))
+    pairs = []  # pair of (size, sqrt(ration))
     for r in ratios:
         pairs.append([sizes[0], math.sqrt(r)])
     for s in sizes[1:]:
@@ -746,8 +753,8 @@ def MultiBoxPrior(feature_map, sizes=[0.75, 0.5, 0.25], ratios=[1, 2, 0.5]):
 
     pairs = np.array(pairs)
 
-    ss1 = pairs[:, 0] * pairs[:, 1] # size * sqrt(ration)
-    ss2 = pairs[:, 0] / pairs[:, 1] # size / sqrt(ration)
+    ss1 = pairs[:, 0] * pairs[:, 1]  # size * sqrt(ration)
+    ss2 = pairs[:, 0] / pairs[:, 1]  # size / sqrt(ration)
 
     base_anchors = np.stack([-ss1, -ss2, ss1, ss2], axis=1) / 2
 
@@ -762,6 +769,7 @@ def MultiBoxPrior(feature_map, sizes=[0.75, 0.5, 0.25], ratios=[1, 2, 0.5]):
     anchors = shifts.reshape((-1, 1, 4)) + base_anchors.reshape((1, -1, 4))
 
     return torch.tensor(anchors, dtype=torch.float32).view(1, -1, 4)
+
 
 def show_bboxes(axes, bboxes, labels=None, colors=None):
     def _make_list(obj, default_values=None):
@@ -783,6 +791,7 @@ def show_bboxes(axes, bboxes, labels=None, colors=None):
                       va='center', ha='center', fontsize=6, color=text_color,
                       bbox=dict(facecolor=color, lw=0))
 
+
 def compute_intersection(set_1, set_2):
     """
     计算anchor之间的交集
@@ -793,10 +802,14 @@ def compute_intersection(set_1, set_2):
         intersection of each of the boxes in set 1 with respect to each of the boxes in set 2, shape: (n1, n2)
     """
     # PyTorch auto-broadcasts singleton dimensions
-    lower_bounds = torch.max(set_1[:, :2].unsqueeze(1), set_2[:, :2].unsqueeze(0))  # (n1, n2, 2)
-    upper_bounds = torch.min(set_1[:, 2:].unsqueeze(1), set_2[:, 2:].unsqueeze(0))  # (n1, n2, 2)
-    intersection_dims = torch.clamp(upper_bounds - lower_bounds, min=0)  # (n1, n2, 2)
+    lower_bounds = torch.max(set_1[:, :2].unsqueeze(
+        1), set_2[:, :2].unsqueeze(0))  # (n1, n2, 2)
+    upper_bounds = torch.min(set_1[:, 2:].unsqueeze(
+        1), set_2[:, 2:].unsqueeze(0))  # (n1, n2, 2)
+    intersection_dims = torch.clamp(
+        upper_bounds - lower_bounds, min=0)  # (n1, n2, 2)
     return intersection_dims[:, :, 0] * intersection_dims[:, :, 1]  # (n1, n2)
+
 
 def compute_jaccard(set_1, set_2):
     """
@@ -811,14 +824,18 @@ def compute_jaccard(set_1, set_2):
     intersection = compute_intersection(set_1, set_2)  # (n1, n2)
 
     # Find areas of each box in both sets
-    areas_set_1 = (set_1[:, 2] - set_1[:, 0]) * (set_1[:, 3] - set_1[:, 1])  # (n1)
-    areas_set_2 = (set_2[:, 2] - set_2[:, 0]) * (set_2[:, 3] - set_2[:, 1])  # (n2)
+    areas_set_1 = (set_1[:, 2] - set_1[:, 0]) * \
+        (set_1[:, 3] - set_1[:, 1])  # (n1)
+    areas_set_2 = (set_2[:, 2] - set_2[:, 0]) * \
+        (set_2[:, 3] - set_2[:, 1])  # (n2)
 
     # Find the union
     # PyTorch auto-broadcasts singleton dimensions
-    union = areas_set_1.unsqueeze(1) + areas_set_2.unsqueeze(0) - intersection  # (n1, n2)
+    union = areas_set_1.unsqueeze(
+        1) + areas_set_2.unsqueeze(0) - intersection  # (n1, n2)
 
     return intersection / union  # (n1, n2)
+
 
 def assign_anchor(bb, anchor, jaccard_threshold=0.5):
     """
@@ -833,7 +850,8 @@ def assign_anchor(bb, anchor, jaccard_threshold=0.5):
     """
     na = anchor.shape[0]
     nb = bb.shape[0]
-    jaccard = compute_jaccard(anchor, bb).detach().cpu().numpy() # shape: (na, nb)
+    jaccard = compute_jaccard(
+        anchor, bb).detach().cpu().numpy()  # shape: (na, nb)
     assigned_idx = np.ones(na) * -1  # 初始全为-1
 
     # 先为每个bb分配一个anchor(不要求满足jaccard_threshold)
@@ -841,7 +859,7 @@ def assign_anchor(bb, anchor, jaccard_threshold=0.5):
     for j in range(nb):
         i = np.argmax(jaccard_cp[:, j])
         assigned_idx[i] = j
-        jaccard_cp[i, :] = float("-inf") # 赋值为负无穷, 相当于去掉这一行
+        jaccard_cp[i, :] = float("-inf")  # 赋值为负无穷, 相当于去掉这一行
 
     # 处理还未被分配的anchor, 要求满足jaccard_threshold
     for i in range(na):
@@ -851,6 +869,7 @@ def assign_anchor(bb, anchor, jaccard_threshold=0.5):
                 assigned_idx[i] = j
 
     return torch.tensor(assigned_idx, dtype=torch.long)
+
 
 def xy_to_cxcy(xy):
     """
@@ -863,6 +882,7 @@ def xy_to_cxcy(xy):
     """
     return torch.cat([(xy[:, 2:] + xy[:, :2]) / 2,  # c_x, c_y
                       xy[:, 2:] - xy[:, :2]], 1)  # w, h
+
 
 def MultiBoxTarget(anchor, label):
     """
@@ -894,23 +914,28 @@ def MultiBoxTarget(anchor, label):
             cls_labels: (锚框总数, 4), 0代表背景
         """
         an = anc.shape[0]
-        assigned_idx = assign_anchor(lab[:, 1:], anc) # (锚框总数, )
-        bbox_mask = ((assigned_idx >= 0).float().unsqueeze(-1)).repeat(1, 4) # (锚框总数, 4)
+        assigned_idx = assign_anchor(lab[:, 1:], anc)  # (锚框总数, )
+        bbox_mask = ((assigned_idx >= 0).float().unsqueeze(-1)
+                     ).repeat(1, 4)  # (锚框总数, 4)
 
-        cls_labels = torch.zeros(an, dtype=torch.long) # 0表示背景
-        assigned_bb = torch.zeros((an, 4), dtype=torch.float32) # 所有anchor对应的bb坐标
+        cls_labels = torch.zeros(an, dtype=torch.long)  # 0表示背景
+        assigned_bb = torch.zeros(
+            (an, 4), dtype=torch.float32)  # 所有anchor对应的bb坐标
         for i in range(an):
             bb_idx = assigned_idx[i]
-            if bb_idx >= 0: # 即非背景
-                cls_labels[i] = lab[bb_idx, 0].long().item() + 1 # 注意要加一
+            if bb_idx >= 0:  # 即非背景
+                cls_labels[i] = lab[bb_idx, 0].long().item() + 1  # 注意要加一
                 assigned_bb[i, :] = lab[bb_idx, 1:]
 
-        center_anc = xy_to_cxcy(anc) # (center_x, center_y, w, h)
+        center_anc = xy_to_cxcy(anc)  # (center_x, center_y, w, h)
         center_assigned_bb = xy_to_cxcy(assigned_bb)
 
-        offset_xy = 10.0 * (center_assigned_bb[:, :2] - center_anc[:, :2]) / center_anc[:, 2:]
-        offset_wh = 5.0 * torch.log(eps + center_assigned_bb[:, 2:] / center_anc[:, 2:])
-        offset = torch.cat([offset_xy, offset_wh], dim = 1) * bbox_mask # (锚框总数, 4)
+        offset_xy = 10.0 * \
+            (center_assigned_bb[:, :2] - center_anc[:, :2]) / center_anc[:, 2:]
+        offset_wh = 5.0 * \
+            torch.log(eps + center_assigned_bb[:, 2:] / center_anc[:, 2:])
+        offset = torch.cat([offset_xy, offset_wh], dim=1) * \
+            bbox_mask  # (锚框总数, 4)
 
         return offset.view(-1), bbox_mask.view(-1), cls_labels
 
@@ -918,7 +943,8 @@ def MultiBoxTarget(anchor, label):
     batch_mask = []
     batch_cls_labels = []
     for b in range(bn):
-        offset, bbox_mask, cls_labels = MultiBoxTarget_one(anchor[0, :, :], label[b, :, :])
+        offset, bbox_mask, cls_labels = MultiBoxTarget_one(
+            anchor[0, :, :], label[b, :, :])
 
         batch_offset.append(offset)
         batch_mask.append(bbox_mask)
@@ -931,8 +957,11 @@ def MultiBoxTarget(anchor, label):
     return [bbox_offset, bbox_mask, cls_labels]
 
 
-Pred_BB_Info = namedtuple("Pred_BB_Info", ["index", "class_id", "confidence", "xyxy"])
-def non_max_suppression(bb_info_list, nms_threshold = 0.5):
+Pred_BB_Info = namedtuple(
+    "Pred_BB_Info", ["index", "class_id", "confidence", "xyxy"])
+
+
+def non_max_suppression(bb_info_list, nms_threshold=0.5):
     """
     非极大抑制处理预测的边界框
     Args:
@@ -943,7 +972,8 @@ def non_max_suppression(bb_info_list, nms_threshold = 0.5):
     """
     output = []
     # 先根据置信度从高到低排序
-    sorted_bb_info_list = sorted(bb_info_list, key = lambda x: x.confidence, reverse=True)
+    sorted_bb_info_list = sorted(
+        bb_info_list, key=lambda x: x.confidence, reverse=True)
 
     while len(sorted_bb_info_list) != 0:
         best = sorted_bb_info_list.pop(0)
@@ -957,13 +987,15 @@ def non_max_suppression(bb_info_list, nms_threshold = 0.5):
             bb_xyxy.append(bb.xyxy)
 
         iou = compute_jaccard(torch.tensor([best.xyxy]),
-                              torch.tensor(bb_xyxy))[0] # shape: (len(sorted_bb_info_list), )
+                              torch.tensor(bb_xyxy))[0]  # shape: (len(sorted_bb_info_list), )
 
         n = len(sorted_bb_info_list)
-        sorted_bb_info_list = [sorted_bb_info_list[i] for i in range(n) if iou[i] <= nms_threshold]
+        sorted_bb_info_list = [sorted_bb_info_list[i]
+                               for i in range(n) if iou[i] <= nms_threshold]
     return output
 
-def MultiBoxDetection(cls_prob, loc_pred, anchor, nms_threshold = 0.5):
+
+def MultiBoxDetection(cls_prob, loc_pred, anchor, nms_threshold=0.5):
     """
     # 按照「9.4.1. 生成多个锚框」所讲的实现, anchor表示成归一化(xmin, ymin, xmax, ymax).
     https://zh.d2l.ai/chapter_computer-vision/anchor.html
@@ -977,10 +1009,11 @@ def MultiBoxDetection(cls_prob, loc_pred, anchor, nms_threshold = 0.5):
         每个锚框信息由[class_id, confidence, xmin, ymin, xmax, ymax]表示
         class_id=-1 表示背景或在非极大值抑制中被移除了
     """
-    assert len(cls_prob.shape) == 3 and len(loc_pred.shape) == 2 and len(anchor.shape) == 3
+    assert len(cls_prob.shape) == 3 and len(
+        loc_pred.shape) == 2 and len(anchor.shape) == 3
     bn = cls_prob.shape[0]
 
-    def MultiBoxDetection_one(c_p, l_p, anc, nms_threshold = 0.5):
+    def MultiBoxDetection_one(c_p, l_p, anc, nms_threshold=0.5):
         """
         MultiBoxDetection的辅助函数, 处理batch中的一个
         Args:
@@ -992,21 +1025,22 @@ def MultiBoxDetection(cls_prob, loc_pred, anchor, nms_threshold = 0.5):
             output: (锚框个数, 6)
         """
         pred_bb_num = c_p.shape[1]
-        anc = (anc + l_p.view(pred_bb_num, 4)).detach().cpu().numpy() # 加上偏移量
+        anc = (anc + l_p.view(pred_bb_num, 4)).detach().cpu().numpy()  # 加上偏移量
 
         confidence, class_id = torch.max(c_p, 0)
         confidence = confidence.detach().cpu().numpy()
         class_id = class_id.detach().cpu().numpy()
 
         pred_bb_info = [Pred_BB_Info(
-                            index = i,
-                            class_id = class_id[i] - 1, # 正类label从0开始
-                            confidence = confidence[i],
-                            xyxy=[*anc[i]]) # xyxy是个列表
-                        for i in range(pred_bb_num)]
+            index=i,
+            class_id=class_id[i] - 1,  # 正类label从0开始
+            confidence=confidence[i],
+            xyxy=[*anc[i]])  # xyxy是个列表
+            for i in range(pred_bb_num)]
 
         # 正类的index
-        obj_bb_idx = [bb.index for bb in non_max_suppression(pred_bb_info, nms_threshold)]
+        obj_bb_idx = [bb.index for bb in non_max_suppression(
+            pred_bb_info, nms_threshold)]
 
         output = []
         for bb in pred_bb_info:
@@ -1016,19 +1050,20 @@ def MultiBoxDetection(cls_prob, loc_pred, anchor, nms_threshold = 0.5):
                 *bb.xyxy
             ])
 
-        return torch.tensor(output) # shape: (锚框个数, 6)
+        return torch.tensor(output)  # shape: (锚框个数, 6)
 
     batch_output = []
     for b in range(bn):
-        batch_output.append(MultiBoxDetection_one(cls_prob[b], loc_pred[b], anchor[0], nms_threshold))
+        batch_output.append(MultiBoxDetection_one(
+            cls_prob[b], loc_pred[b], anchor[0], nms_threshold))
 
     return torch.stack(batch_output)
-
 
 
 # ################################# 9.6 ############################
 class PikachuDetDataset(torch.utils.data.Dataset):
     """皮卡丘检测数据集类"""
+
     def __init__(self, data_dir, part, image_size=(256, 256)):
         assert part in ["train", "val"]
         self.image_size = image_size
@@ -1052,22 +1087,22 @@ class PikachuDetDataset(torch.utils.data.Dataset):
                          dtype="float32")[None, :]
 
         PIL_img = Image.open(os.path.join(self.image_dir, image_path)
-                            ).convert('RGB').resize(self.image_size)
+                             ).convert('RGB').resize(self.image_size)
         img = self.transform(PIL_img)
 
         sample = {
-            "label": label, # shape: (1, 5) [class, xmin, ymin, xmax, ymax]
+            "label": label,  # shape: (1, 5) [class, xmin, ymin, xmax, ymax]
             "image": img    # shape: (3, *image_size)
         }
 
         return sample
 
-def load_data_pikachu(batch_size, edge_size=256, data_dir = '../../data/pikachu'):
+
+def load_data_pikachu(batch_size, edge_size=256, data_dir='../../data/pikachu'):
     """edge_size：输出图像的宽和高"""
     image_size = (edge_size, edge_size)
     train_dataset = PikachuDetDataset(data_dir, 'train', image_size)
     val_dataset = PikachuDetDataset(data_dir, 'val', image_size)
-
 
     train_iter = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size,
                                              shuffle=True, num_workers=4)
@@ -1088,13 +1123,17 @@ def read_voc_images(root="../../data/VOCdevkit/VOC2012",
         images = images[:min(max_num, len(images))]
     features, labels = [None] * len(images), [None] * len(images)
     for i, fname in tqdm(enumerate(images)):
-        features[i] = Image.open('%s/JPEGImages/%s.jpg' % (root, fname)).convert("RGB")
-        labels[i] = Image.open('%s/SegmentationClass/%s.png' % (root, fname)).convert("RGB")
-    return features, labels # PIL image
+        features[i] = Image.open('%s/JPEGImages/%s.jpg' %
+                                 (root, fname)).convert("RGB")
+        labels[i] = Image.open('%s/SegmentationClass/%s.png' %
+                               (root, fname)).convert("RGB")
+    return features, labels  # PIL image
 
 # colormap2label = torch.zeros(256 ** 3, dtype=torch.uint8)
 # for i, colormap in enumerate(VOC_COLORMAP):
 #     colormap2label[(colormap[0] * 256 + colormap[1]) * 256 + colormap[2]] = i
+
+
 def voc_label_indices(colormap, colormap2label):
     """
     convert colormap (PIL image) to colormap2label (uint8 tensor).
@@ -1104,17 +1143,19 @@ def voc_label_indices(colormap, colormap2label):
            + colormap[:, :, 2])
     return colormap2label[idx]
 
+
 def voc_rand_crop(feature, label, height, width):
     """
     Random crop feature (PIL image) and label (PIL image).
     """
     i, j, h, w = torchvision.transforms.RandomCrop.get_params(
-            feature, output_size=(height, width))
+        feature, output_size=(height, width))
 
     feature = torchvision.transforms.functional.crop(feature, i, j, h, w)
     label = torchvision.transforms.functional.crop(label, i, j, h, w)
 
     return feature, label
+
 
 class VOCSegDataset(torch.utils.data.Dataset):
     def __init__(self, is_train, crop_size, voc_dir, colormap2label, max_num=None):
@@ -1129,11 +1170,11 @@ class VOCSegDataset(torch.utils.data.Dataset):
                                              std=self.rgb_std)
         ])
 
-        self.crop_size = crop_size # (h, w)
+        self.crop_size = crop_size  # (h, w)
         features, labels = read_voc_images(root=voc_dir,
                                            is_train=is_train,
                                            max_num=max_num)
-        self.features = self.filter(features) # PIL image
+        self.features = self.filter(features)  # PIL image
         self.labels = self.filter(labels)     # PIL image
         self.colormap2label = colormap2label
         print('read ' + str(len(self.features)) + ' valid examples')
@@ -1154,7 +1195,6 @@ class VOCSegDataset(torch.utils.data.Dataset):
         return len(self.features)
 
 
-
 # ############################# 10.7 ##########################
 def read_imdb(folder='train', data_root="/S1/CSCL/tangss/Datasets/aclImdb"):
     data = []
@@ -1167,6 +1207,7 @@ def read_imdb(folder='train', data_root="/S1/CSCL/tangss/Datasets/aclImdb"):
     random.shuffle(data)
     return data
 
+
 def get_tokenized_imdb(data):
     """
     data: list of [string, label]
@@ -1175,10 +1216,12 @@ def get_tokenized_imdb(data):
         return [tok.lower() for tok in text.split(' ')]
     return [tokenizer(review) for review, _ in data]
 
+
 def get_vocab_imdb(data):
     tokenized_data = get_tokenized_imdb(data)
     counter = collections.Counter([tk for st in tokenized_data for tk in st])
     return torchtext.vocab.Vocab(counter, min_freq=5)
+
 
 def preprocess_imdb(data, vocab):
     max_l = 500  # 将每条评论通过截断或者补0，使得长度变成500
@@ -1187,14 +1230,17 @@ def preprocess_imdb(data, vocab):
         return x[:max_l] if len(x) > max_l else x + [0] * (max_l - len(x))
 
     tokenized_data = get_tokenized_imdb(data)
-    features = torch.tensor([pad([vocab.stoi[word] for word in words]) for words in tokenized_data])
+    features = torch.tensor(
+        [pad([vocab.stoi[word] for word in words]) for words in tokenized_data])
     labels = torch.tensor([score for _, score in data])
     return features, labels
 
+
 def load_pretrained_embedding(words, pretrained_vocab):
     """从预训练好的vocab中提取出words对应的词向量"""
-    embed = torch.zeros(len(words), pretrained_vocab.vectors[0].shape[0]) # 初始化为0
-    oov_count = 0 # out of vocabulary
+    embed = torch.zeros(
+        len(words), pretrained_vocab.vectors[0].shape[0])  # 初始化为0
+    oov_count = 0  # out of vocabulary
     for i, word in enumerate(words):
         try:
             idx = pretrained_vocab.stoi[word]
@@ -1205,9 +1251,40 @@ def load_pretrained_embedding(words, pretrained_vocab):
         print("There are %d oov words." % oov_count)
     return embed
 
+
 def predict_sentiment(net, vocab, sentence):
     """sentence是词语的列表"""
     device = list(net.parameters())[0].device
-    sentence = torch.tensor([vocab.stoi[word] for word in sentence], device=device)
+    sentence = torch.tensor([vocab.stoi[word]
+                            for word in sentence], device=device)
     label = torch.argmax(net(sentence.view((1, -1))), dim=1)
     return 'positive' if label.item() == 1 else 'negative'
+
+
+def train_ros(dataloader, model, loss_fn, optimizer):
+    model.train()
+    size = len(dataloader.dataset)
+    for batch, (X, y) in enumerate(dataloader):
+        pred = model(X)
+        loss = loss_fn(pred, y)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        if batch % 100 == 0:
+            loss, current = loss.item(), batch * len(X)
+            print(f"loss: {loss:.6f}  [{current:5d}/{size:5d}]")
+
+
+def test_ros(dataloader, model, loss_fn):
+    model.eval()
+    loss, correct = 0, 0
+    num_batches = len(dataloader)
+    size = len(dataloader.dataset)
+    with torch.no_grad():
+        for X, y in dataloader:
+            pred = model(X)
+            loss += loss_fn(pred, y).item()
+            correct += (pred.argmax(1) == y).float().sum().item()
+        loss /= num_batches
+        correct /= size
+    print("Avg Loss: {:.6f}\tAccuracy: {:.2f}%".format(loss, correct*100))
